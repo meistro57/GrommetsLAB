@@ -1,0 +1,20 @@
+# dependencies / runtime
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# local scratch & caches
+*.log
+.DS_Store
+
+# secrets — never commit these
+.env
+*.token
+*.pem
+credentials/
+
+# build outputs
+dist/
+build/

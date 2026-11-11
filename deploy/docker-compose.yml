@@ -1,0 +1,8 @@
+services:
+  lab:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "${PORT:-8080}:80"
+    restart: unless-stopped
