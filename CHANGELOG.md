@@ -1,3 +1,7 @@
+## [chalk-broom-v2.2] - 2026-11-14
+Hotfix: GW const -> let (runtime TypeError at page load killed the script).
+Draw path executed headlessly, not just syntax-checked.
+
 ## [chalk-broom-v2.1] - 2026-11-14
 Full-height canvas (100vw x calc(100vh - 96px)); 16 lanes spread across full
 height; repaint-on-resize. Commit incl. below.
