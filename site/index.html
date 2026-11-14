@@ -14,8 +14,11 @@
   main{display:flex;gap:14px;padding:14px 20px;flex-wrap:wrap;align-items:flex-start}
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px}
   .grow{flex:1 1 640px;min-width:300px}
-  canvas{display:block;width:100%;height:auto;background:var(--ground);border-radius:4px}
-  #chalks{background:transparent}
+  canvas{display:block;width:100%;background:var(--ground);border-radius:4px}
+  #ground{width:100vw;height:calc(100vh - 96px);min-height:320px;max-height:none}
+  #chalks{background:transparent;width:100%;height:110px}
+  body{overflow:hidden}
+  main{padding-bottom:0}
   label{display:block;margin:9px 0 3px;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
   input[type=text],input[type=number],select{background:#0e1319;border:1px solid var(--line);color:var(--ink);border-radius:4px;padding:6px 8px;font:inherit;width:100%}
   input[type=range]{width:100%;accent-color:var(--amber)}
@@ -48,11 +51,11 @@
 <body>
 <header>
   <h1>⚡ Chalk Broom</h1>
-  <span class="sub">16 lanes · encoder column clock · <span id="version">v2</span></span>
+  <span class="sub">16 lanes · encoder column clock · <span id="version">v2.1 — full-height</span></span>
 </header>
 <main>
   <section class="panel grow">
-    <canvas id="ground" width="1400" height="380"></canvas>
+    <canvas id="ground"></canvas>
     <canvas id="chalks" width="1400" height="112" style="margin-top:8px"></canvas>
   </section>
 
@@ -149,11 +152,13 @@
 (() => {
 const G = document.getElementById('ground').getContext('2d');
 const C = document.getElementById('chalks').getContext('2d');
-const GW = 1400, GH = 380, CW = 1400, CH = 112;
+const GW = 1400;
+let GH = 760;               // set to fill viewport on load/resize
+const CW = 1400, CH = 112;
 const LANES = 16, CHALK_MM = 25.4, WHEEL_MM = 50;
 const ENC_CPR = 1024, ENC_4X = ENC_CPR * 4;
 const WHEEL_CIRC = Math.PI * WHEEL_MM;
-const ROW_H = 21, PX_PER_MM = GW / 2400;
+let ROW_H = 21, PX_PER_MM = GW / 2400, LANE_PAD = 24;
 
 let pitchMm = 12, speedMs = 0.6, threshold = 128, inverted = false;
 let mirrored = false, flipped = false, ditherOn = false, edgesOn = false;
@@ -349,10 +354,10 @@ function drawColumn(px, bits) {
   const wpx = Math.max(1, pitchMm * PX_PER_MM * (dwellPct / 100));
   for (let lane = 0; lane < LANES; lane++) {
     if (bits & (1 << lane)) {
-      const y = 24 + lane * ROW_H;
+      const y = LANE_PAD + lane * ROW_H;
       const a = (0.78 + Math.random() * 0.18).toFixed(2);
       G.fillStyle = 'rgba(242,239,230,' + a + ')';
-      G.fillRect(px, y, wpx, ROW_H * 0.78);
+      G.fillRect(px, y, wpx, ROW_H * 0.86);
     }
   }
 }
@@ -561,6 +566,43 @@ document.getElementById('laneoff').addEventListener('input', e => {
   rebuild();
 });
 
+// fill the display: canvas backing store tracks the CSS box
+function resizeCanvas() {
+  const el = document.getElementById('ground');
+  const rect = el.getBoundingClientRect();
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const cssH = Math.max(320, rect.height);
+  const cssW = Math.max(320, rect.width);
+  el.width = Math.round(cssW * dpr);
+  el.height = Math.round(cssH * dpr);
+  GW = el.width; GH = el.height;
+
+  // lanes fill the height: pad top/bottom, divide remainder by 16
+  const pad = Math.round(GH * 0.04);
+  LANE_PAD = pad;
+  ROW_H = (GH - pad * 2) / LANES;
+
+  // horizontal: keep ~2.4 m of drawing mapped across the width
+  PX_PER_MM = GW / 2400;
+
+  // chalk strip
+  const ck = document.getElementById('chalks');
+  ck.width = Math.round(cssW * dpr);
+  ck.height = Math.round(110 * dpr);
+
+  clearGround();
+  redrawAll();
+}
+
+// repaint everything already laid down after a resize
+function redrawAll() {
+  const upTo = Math.min(colIndex, pattern.length);
+  for (let i = 0; i < upTo; i++) {
+    const px = 20 + i * pitchMm * PX_PER_MM;
+    if (px < GW) drawColumn(px, pattern[i]);
+  }
+}
+
 // keyboard shortcuts
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
@@ -570,7 +612,8 @@ document.addEventListener('keydown', e => {
 });
 
 rebuild();
-clearGround();
+resizeCanvas();
+window.addEventListener('resize', () => { resizeCanvas(); });
 drawChalkRow(0);
 requestAnimationFrame(frame);
 })();

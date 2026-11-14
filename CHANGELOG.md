@@ -1,3 +1,7 @@
+## [chalk-broom-v2.1] - 2026-11-14
+Full-height canvas (100vw x calc(100vh - 96px)); 16 lanes spread across full
+height; repaint-on-resize. Commit incl. below.
+
 # Changelog
 
 Versioned history of what's been published on the playground. Each entry maps
